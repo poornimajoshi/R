@@ -1,0 +1,72 @@
+---
+title: "assignment1"
+author: "poornimajoshi"
+date: "9/24/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+setwd("~/Documents/Intro to Data Science")
+library(data.table)
+dt <- data.table(read.csv("adult.csv", header = TRUE))
+dt
+
+age <- dt$age
+hist(age)
+bplot <- box <- boxplot(age)
+outliers <- bplot$out
+outliers
+outliersperc <- (length(outliers)/length(age)) * 100
+outliersperc
+
+library(moments)
+head(dt)
+skewness(age)
+
+
+```2.	Using the skewness function in the ???moments??? package/library determine whether the numeric variables are normally shaped. Above 1 or below -1 are considered not to be normal curves```
+
+dt[, sapply(dt, class) == "numeric"]
+new_dt <- dt[, lapply(dt, is.numeric) == TRUE, with = FALSE]
+
+lapply(new_dt, function(x) (x - skewness(x)))
+print(new_dt)
+
+for(i in colnames(new_dt)){
+skew <- skewness(new_dt[[i]])
+if(skew > -1 & skew < 1) {
+print(paste0(i, " is a normal curve " ))
+}
+}
+
+
+```3.	Create a new data.frame composed of only scaled numeric variables from the dataset called census_scaled_vars```
+dt[, sapply(dt, class) == "numeric"]
+new_dt <- dt[, lapply(dt, is.numeric) == TRUE, with = FALSE]
+
+census_scaled_vars <- scale(new_dt)
+
+```4.	What are the percentiles and z scores for the following: a.	Age ??? 80 b.	Education number ??? 11 c.	Hours per week - 40```
