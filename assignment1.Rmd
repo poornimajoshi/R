@@ -7,66 +7,98 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-```
-
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
-```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
-
 setwd("~/Documents/Intro to Data Science")
+```
+
+
+Importing the library packages
+```{r library packages}
 library(data.table)
-dt <- data.table(read.csv("adult.csv", header = TRUE))
-dt
-
-age <- dt$age
-hist(age)
-bplot <- box <- boxplot(age)
-outliers <- bplot$out
-outliers
-outliersperc <- (length(outliers)/length(age)) * 100
-outliersperc
-
 library(moments)
-head(dt)
-skewness(age)
+library(dplyr)
+library(corrplot)
+```
 
+Importing the dataset and printing it
+```{r read the csv file}
+dt <- data.table(read.csv("adult.csv", header = TRUE))
+print(head(dt))
+```
+
+
+```1.	Create a boxplot for age and capture the outliers in a new variable. Then determine the percentage of outliers in age using the length function.```
+```{r box plot}
+age <- dt$age
+education <- dt$education.num
+hours_per_week <- dt$hours.per.week
+hist(age)
+bplot <- boxplot(age)
+outliers <- bplot$out
+outliersperc <- (length(outliers)/length(age)) * 100
+print(paste0("The outliers percentage in age is :", outliersperc))
+```
 
 ```2.	Using the skewness function in the ???moments??? package/library determine whether the numeric variables are normally shaped. Above 1 or below -1 are considered not to be normal curves```
-
+```{r skewness}
 dt[, sapply(dt, class) == "numeric"]
 new_dt <- dt[, lapply(dt, is.numeric) == TRUE, with = FALSE]
-
-lapply(new_dt, function(x) (x - skewness(x)))
-print(new_dt)
-
+apply <-lapply(new_dt, function(x) (x - skewness(x)))
 for(i in colnames(new_dt)){
 skew <- skewness(new_dt[[i]])
 if(skew > -1 & skew < 1) {
-print(paste0(i, " is a normal curve " ))
+print(paste0(i, " is a normal curve with skew ", skew ))
 }
 }
-
+```
 
 ```3.	Create a new data.frame composed of only scaled numeric variables from the dataset called census_scaled_vars```
+```{r scaling the numeric}
 dt[, sapply(dt, class) == "numeric"]
 new_dt <- dt[, lapply(dt, is.numeric) == TRUE, with = FALSE]
-
 census_scaled_vars <- scale(new_dt)
+```
 
 ```4.	What are the percentiles and z scores for the following: a.	Age ??? 80 b.	Education number ??? 11 c.	Hours per week - 40```
+```{r percentile, zscore}
+
+pop_sd <- sd(age)*sqrt((length(age)-1)/(length(age)))
+pop_mean <- mean(age)
+z <- (80 - pop_mean) / pop_sd
+percentile <- pnorm(z)
+print(paste0("The the percentile for age 80 is : ", percentile*100))
+
+pop_sd1 <- sd(education)*sqrt((length(education)-1)/(length(education)))
+pop_mean1 <- mean(education)
+z1 <- (11 - pop_mean1) / pop_sd1
+percentile1 <- pnorm(z1)
+print(paste0("The the percentile for education 11 is : ", percentile1*100))
+
+pop_sd2 <- sd(hours_per_week)*sqrt((length(hours_per_week)-1)/(length(hours_per_week)))
+pop_mean2 <- mean(hours_per_week)
+z2 <- (40 - pop_mean2) / pop_sd2
+percentile2 <- pnorm(z2)
+print(paste0("The the percentile for hours per week 40 is : ", percentile2*100))
+
+```
+
+
+```5.	Generate a corrplot using the data.frame/matrix from item 4 with the internal shapes being squares, include a title and only show the upper portion of the graphic. ```
+```{r corr plot}
+corr <- cor(census_scaled_vars)
+corrplot(corr, method="square", title="cennsus data", type="upper")
+```
+
+```6.	What is the average hours worked per week, average capital gains and loss for each education group? Hint explore using dplyr and the summary function (We didn???t cover this in class, so just do the best you can)```
+```{r caluating averages}
+dt %>%
+    group_by(education) %>%
+    dplyr::summarize(Mean = mean(hours_per_week))
+    
+dt %>%
+    group_by(education) %>%
+    dplyr::summarize(Mean = mean(dt$capital.gain))
+    
+dt %>%
+    group_by(education) %>%
+    dplyr::summarize(Mean = mean(dt$capital.loss))
+```   
