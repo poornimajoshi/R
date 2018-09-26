@@ -61,23 +61,17 @@ census_scaled_vars <- scale(new_dt)
 ```4.	What are the percentiles and z scores for the following: a.	Age ??? 80 b.	Education number ??? 11 c.	Hours per week - 40```
 ```{r percentile, zscore}
 
-pop_sd <- sd(age)*sqrt((length(age)-1)/(length(age)))
-pop_mean <- mean(age)
-z <- (80 - pop_mean) / pop_sd
-percentile <- pnorm(z)
-print(paste0("The the percentile for age 80 is : ", percentile*100))
+percentile <- function(x, y) {
+  pop_sd <- sd(x)*sqrt((length(x)-1)/(length(x)))
+  pop_mean <- mean(x)
+  z <- (y - pop_mean) / pop_sd
+  percentile <- pnorm(z)
+  print(paste0("The the percentile for age 80 is : ", percentile*100))
+}
 
-pop_sd1 <- sd(education)*sqrt((length(education)-1)/(length(education)))
-pop_mean1 <- mean(education)
-z1 <- (11 - pop_mean1) / pop_sd1
-percentile1 <- pnorm(z1)
-print(paste0("The the percentile for education 11 is : ", percentile1*100))
-
-pop_sd2 <- sd(hours_per_week)*sqrt((length(hours_per_week)-1)/(length(hours_per_week)))
-pop_mean2 <- mean(hours_per_week)
-z2 <- (40 - pop_mean2) / pop_sd2
-percentile2 <- pnorm(z2)
-print(paste0("The the percentile for hours per week 40 is : ", percentile2*100))
+percentile(age, 80)
+percentile(education, 11)
+percentile(hours_per_week, 40)
 
 ```
 
@@ -91,14 +85,6 @@ corrplot(corr, method="square", title="cennsus data", type="upper")
 ```6.	What is the average hours worked per week, average capital gains and loss for each education group? Hint explore using dplyr and the summary function (We didn???t cover this in class, so just do the best you can)```
 ```{r caluating averages}
 dt %>%
-    group_by(education) %>%
-    dplyr::summarize(Mean = mean(hours_per_week))
-    
-dt %>%
-    group_by(education) %>%
-    dplyr::summarize(Mean = mean(dt$capital.gain))
-    
-dt %>%
-    group_by(education) %>%
-    dplyr::summarize(Mean = mean(dt$capital.loss))
+  group_by(education) %>%
+  summarise_at(vars(hours.per.week, capital.gain, capital.loss), funs(mean(., na.rm=TRUE)))
 ```   
