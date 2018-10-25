@@ -1,0 +1,128 @@
+---
+title: "project1"
+author: "poornima_joshi"
+date: "10/20/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries}
+library(fastDummies)
+library(data.table)
+library(corrplot)
+```
+
+
+```{r importing data, echo=FALSE}
+setwd("~/Documents/Intro to Data Science")
+student_data <- read.csv("usa.csv", header = TRUE)
+#View(head(student_data))
+```
+
+```{r EDA}
+str(student_data)
+head(student_data)
+summary(student_data$AGE)
+hist(student_data$AGE)
+summary(student_data$YEAR)
+```
+
+
+```{r dummy variables}
+data <- student_data
+data$SEX <- as.factor(data$SEX)
+data$RACE <- as.factor(data$RACE)
+data$HISPAN <- as.factor(data$HISPAN)
+str(data)
+#View(head(data))
+```
+
+
+```{r outstem}
+df <- data
+
+df$outstem <-ifelse((df$DEGFIELDD > 1102 & df$DEGFIELDD < 1107) | (df$DEGFIELDD > 1300 & df$DEGFIELDD < 1303) | (df$DEGFIELDD > 2000 & df$DEGFIELDD < 2108) | (df$DEGFIELDD > 2399 & df$DEGFIELDD < 2600) | (df$DEGFIELDD > 3599 & df$DEGFIELDD < 3802) | (df$DEGFIELDD > 4001 & df$DEGFIELDD < 4007) | (df$DEGFIELDD > 4999 & df$DEGFIELDD < 5103) | (df$DEGFIELDD ==5901) | (df$DEGFIELDD == 6106) | (df$DEGFIELDD == 6108) | (df$DEGFIELDD == 6202) | (df$DEGFIELDD == 6212), 1, 0)
+str(df)
+#View(head(df))
+
+```
+
+
+```{r creating merit }
+new <- df
+meritFL <-ifelse((new$BPL==12 & new$BIRTHYR >1978) , 1, 0)
+meritGA <-ifelse((new$BPL==13 & new$BIRTHYR >1974) , 1, 0)
+meritKY <-ifelse((new$BPL==21 & new$BIRTHYR >1980) , 1, 0)
+meritLA <-ifelse((new$BPL==22 & new$BIRTHYR >1979) , 1, 0)
+meritNE <-ifelse((new$BPL==32 & new$BIRTHYR >1981) , 1, 0)
+meritNM <-ifelse((new$BPL==35 & new$BIRTHYR >1978) , 1, 0)
+meritSC <-ifelse((new$BPL==45 & new$BIRTHYR >1979) , 1, 0)
+meritTN <-ifelse((new$BPL==47 & new$BIRTHYR >1984) , 1, 0)
+meritWV <-ifelse((new$BPL==54 & new$BIRTHYR >1983) , 1, 0)
+
+merit <- meritFL + meritGA + meritKY + meritLA + meritNE + meritNM + meritSC + meritTN + meritWV
+df$merit <- merit
+```
+
+
+```{r cleaning up df}
+df <- fastDummies::dummy_cols(df)
+str(df)
+str(df)
+#View((df))
+
+df$race_black <- df$RACE_2
+df$race_asian <- df$RACE_4 + df$RACE_5 +df$RACE_6
+df$race_other <- df$RACE_3 + df$RACE_7 + df$RACE_9
+df$hispanic <- df$HISPAN_1 + df$HISPAN_2 + df$HISPAN_3 + df$HISPAN_4
+
+# dropping unnecessary columns
+df <- subset(df, select = -c(RACE_2, RACE_5, RACE_6, RACE_4, RACE_3, RACE_7, RACE_9, HISPAN_1, HISPAN_2, HISPAN_3, HISPAN_4))
+df <- subset(df, select = -c(BPLD, DATANUM, DEGFIELD, DEGFIELDD, GQ, HHWT, HISPAN, HISPAND, PERNUM, PERWT, RACE, RACE_8, RACED,SERIAL, SEX, YEAR))
+df <- subset(df, select = -c(AGE))
+df <- subset(df, select = -c(SEX_1, RACE_1, HISPAN_0))
+str(df)
+```
+
+
+```{r birthyear, education and place dummys}
+bpl_gen <- df
+bpl_gen <- subset(bpl_gen, BPL < 57)
+bpl_gen <- subset(bpl_gen, BIRTHYR > 1969 & BIRTHYR < 1998 )
+bpl_gen <- subset(bpl_gen, EDUCD > 99 & EDUCD < 117 )
+max(bpl_gen$EDUCD)
+min(bpl_gen$EDUCD)
+
+bpl_gen <- subset(bpl_gen, select = -c(EDUCD, EDUC))
+min(bpl_gen$BIRTHYR)
+max(bpl_gen$BIRTHYR)
+
+str(bpl_gen)
+nrow(bpl_gen)
+bpl_gen$BPL <- as.factor(bpl_gen$BPL)
+bpl_gen$BIRTHYR <- as.factor(bpl_gen$BIRTHYR)
+
+meritSC <-ifelse((new$BPL==45 & new$BIRTHYR >1979) , 1, 0)
+str(bpl_gen)
+
+
+final <- fastDummies::dummy_cols(bpl_gen)
+final <- subset(final, SEX_2 < 1 )
+final <- subset(final, select = -c(BIRTHYR, BPL))
+final <- subset(final, select = -c(SEX_2))
+str(final)
+#View(final)
+
+```
+
+```{r regression}
+
+model <- lm(outstem~ . ,data=final)
+sink("R output.txt")
+summary(model)
+hist(model$residuals)
+#stargazer(model, out = "results.html")
+```

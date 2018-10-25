@@ -1,0 +1,126 @@
+---
+title: "Regression HW"
+author: "poornima joshi"
+date: "October 15, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Let's practice with a student math score dataset. Create a multiple linear regression model that includes four variables one of which must be factor. Work through each of the assumptions and then evaluate your model quality. Try to make the best model possible using any combination of the four variables.
+
+Once you've choosen a model explain the quality by answering the following: 
+
+Are the residuals normally shaped?
+Which coeficients appear to contribute most to the model, how do you know?
+What percentage of the range of the dependent variable is the standardize error term?
+What percentage of the variance in the dependent variable is explained?
+
+
+Finally use the predict function to predict ten test scores based on your model - works better to use the unscaled data for the predict funtion, so you may need to convert back to the uscaled data.  
+
+
+```{r}
+student_data <- read.csv("student-mat.csv", stringsAsFactors = TRUE, header = TRUE, sep = ";")#why does this work, need the separator. 
+
+View(student_data)
+str(student_data)
+#Data dictionary: https://data.world/uci/student-performance/workspace/project-summary
+
+#What's a good dependent variable and question we could ask of this data?
+
+
+student_data$avegrade <- (student_data$G1+student_data$G2+student_data$G3)/3
+
+#Could also index [row, column]
+dim(student_data)
+student_data$avegrade <- (student_data[ ,31]+student_data[ ,32]+student_data[ ,33])/3#could also index 
+#Check shape of the dependent - Helps us better understand any issues that may arrise from the model
+#1 Linear relationships with dependent variable. 
+#2 Multicollinearity - After the model is created or correlation matrix before
+#3 Homoscedasticity - After the model is created
+summary(student_data)
+shapiro.test(student_data$avegrade)
+hist(student_data$avegrade)
+
+library(moments)
+skewness(student_data$G1) 
+skewness(student_data$G2) 
+skewness(student_data$G3) 
+
+scatter.smooth(student_data$G1,student_data$G2)
+scatter.smooth(student_data$G1,student_data$G3)
+scatter.smooth(student_data$G3,student_data$avegrade)
+
+
+#Lot of variables so might want to run a correlation matrix to select a few that have nice potential to explain the dependent. 
+
+cor(student_data)# It doesn't this work since it needs a numeric value
+
+
+#can use the base R function Filter 
+cor(Filter(is.numeric,student_data))
+
+#or....
+
+library(dplyr)#can use the select_if function in dplyr, Base function is likely faster
+cor(select_if(student_data, is.numeric))
+
+#Scaling the numeric variables
+student_data_scaled <- data.frame(student_data %>%
+    mutate_if(is.integer, scale))
+
+View(student_data)
+View(student_data_scaled)
+```
+
+```{r, echo=TRUE}
+Final.Pred.Model <- lm(G3~G1 + G2 + Mjob ,data=student_data)
+summary(Final.Pred.Model)
+Final.Pred.Model$fitted.values
+
+# G1 and G2 are significant here. And the residuals don't look very good. Degrees of freedom is good
+# F-statistic is ok
+
+qnorm(Final.Pred.Model$residuals)
+hist(Final.Pred.Model$residuals)
+skewness(Final.Pred.Model$residuals)
+range(student_data$final)
+
+qqnorm(Final.Pred.Model$residuals,
+       ylab = "Observed Quantiles",
+       main = "Q-Q Plot to Test Normality of Residuals")
+
+qqline(Final.Pred.Model$residuals,
+       col = "red", 
+       lwd = 3)
+coef(Final.Pred.Model)
+VIF(Final.Pred.Model)
+
+library(gvlma)
+assump <- gvlma(Final.Pred.Model)
+assump
+```
+
+We can also add the results of our predictions to the dataframe
+```{r, echo=TRUE}
+library(modelr)
+#modelr is a powerful package for regression
+model.final.pred <- add_predictions(student_data,Final.Pred.Model)
+head(model.final.pred)
+library(ggplot2)
+ggplot(model.final.pred,aes(avegrade,pred))+geom_point(aes(avegrade,pred))+geom_line(aes(pred), colour="red", size=1)
+# Adding the residuals 
+model.final.pred <- add_residuals(model.final.pred,Final.Pred.Model)
+head(model.final.pred)
+ggplot(model.final.pred, aes(resid))+geom_freqpoly(binwidth=.05)
+
+```
+
+Predict future values
+```{r, echo=TRUE}
+library(stats)
+predict(Final.Pred.Model,data.frame(G1=c(6,4,10), G2=c(6,5,8), Mjob=c("at_home",'at_home','at_home')))
+```
