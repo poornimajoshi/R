@@ -1,0 +1,100 @@
+---
+title: "Logistic Regression Homework"
+author: "Brian Wright"
+date: "November 6, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+In class, let's use the email dataset in the "openintro" package to try to predict spam, start by using to_multiple, cc, attach, dollar, winner, inherit, viagra password, format, re-subj and exlaim-subj, in the final model only use variables that are contributing. Divide the data set into test and train prior to model reduction. Lastly use your model to predict spam on the data then assess how well you did by generating "hit rate" and a ROC curve. How good is your model?
+
+```{r}
+library(openintro)
+library(ResourceSelection)
+library(pROC)
+library(pscl)
+library(ISLR)
+library(dplyr)
+library(ROCR)
+library(bestglm)
+library(openintro)
+library(ISLR)
+```
+
+```{r}
+str(email)
+head(email)
+#View(email)
+data <- data.frame(email)
+#data <- data[is.na(data)] <- 0
+library(ISLR)
+#Data set we will be working with is...default 
+data <- subset(data, select = c(spam, to_multiple, cc, attach, dollar, winner, inherit, viagra, password, format, re_subj, exclaim_subj))
+data1 <- data
+data1$spam <- factor(data1$spam)
+str(data1)
+tail(data1)
+nrow(data1)
+
+#So let's try to predict who will default by using a more common machine learning process of splitting the data into train and test segmenets. We are going to to go with a 80 train 20% test appoarch. Not that the common and space tells R to include the entire data.frame
+
+table(data1$spam)
+table(data1$to_multiple)
+train <- data1[1:3100, ]
+test <- data1[3101:3921, ]
+#Next we will run our logisitc regression model, I'm adding the logit phrase but binomial does this by default so it is not necessary. 
+data1.model <- glm(spam~.,family="binomial"(link = "logit"),train)
+summary(data1.model)
+
+#We drop insignificant ones
+data1.model2 <- glm(spam~to_multiple+attach+dollar+winner+password+format+re_subj,family="binomial"(link = "logit"),train)
+summary(data1.model2)
+
+#AIC remained unchanged and now dropping dollar
+
+data1.model3 <- glm(spam~to_multiple+attach+winner+password+format+re_subj,family="binomial"(link = "logit"),train)
+summary(data1.model3)
+
+#AIC went up slightly
+```
+
+
+Moving on, we want to do some predicting and evaluate our model further
+```{r}
+pred.model3 <- predict.glm(data1.model3,test,type='response')
+#iselse works like so...ifelse(test, yes,no), so we are classifying the output if greater than .05 label as 1 if not lable as a 0
+
+head(pred.model3)
+
+pred.model3.1 <- ifelse(pred.model3 > 0.5,1,0)
+#essentially we are creating percentage likelihood of default for each value, above 50% we are saying it's more likely to occur. 
+head(pred.model3.1)
+model3hit <- mean(pred.model3.1!=test$spam)
+model3hit
+#Wow we are amazing! But let's double check to make sure we are as awesome as we think, let's check something. 
+#Or are we really bad...because usually perfect is a sign of error...any guesses?
+library(dplyr)
+test %>% group_by(spam) %>%
+  summarise(no_rows = length(spam))
+#So we only had to correctly identify 120 1 factors, which is a pretty small percentage, but still enough to where we should be getting some level of error...
+
+#What type of variable is spam?
+head(test$spam)
+model3hit.1 <- mean(pred.model3.1!=as.numeric(test$spam))
+model3hit.1
+
+```
+
+
+
+
+
+
+
+
+
+
+

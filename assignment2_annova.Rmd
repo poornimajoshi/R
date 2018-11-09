@@ -1,0 +1,100 @@
+---
+title: "assignment2"
+author: "poornima_joshi"
+date: "9/30/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("~/Documents/R")
+```
+Libraries 
+```{r library packages}
+library(mice)
+library(MASS)
+library(VIM)
+library(stats)
+library(car)
+library(fmsb)
+library(e1071)
+library(vcd)
+library(plyr)
+```
+
+Use the smokers data file from the past weeks lecture to develop an ANOVA model. Include the following items and upload an .rmd file:
+
+1.	Review the data and develop a research question and null/alternative hypothesis that can be tested using the information you have. 
+
+The data below list % of smokers based on income and age, develop a model that assesses the influence income and age have on smoking. 
+
+α=0.05
+#H0: Income has no significnt effect on smoking
+#H0: Age has no significant effect on smoking
+#H0: Income and Age interaction has no significant effect on smoking
+
+
+```{r read csv file}
+smoker.data <- data.table(read.csv("smokersdata.csv", header = TRUE))
+str(smoker.data)
+head(smoker.data)
+summary(smoker.data)
+countNA(smoker.data)
+```
+2.	Ensure the variable classes are correct. 
+
+```{r cars}
+print(class(dt))
+```
+
+3.	Develop an ANOVA object in order to test your hypothesis, run a post-hoc test and interpret the results as it relates to your research question.
+
+#Anova
+Response variable : smoking
+Factors : Age, Income
+
+
+```{r Income factor only}
+# Choosing Income as a factor first
+smoker.data <- data.table(read.csv("smokersdata.csv", header = TRUE))
+smoker.data$Income <- as.factor(smoker.data$Income)
+str(smoker.data)
+smoker.model_1 <- aov(X.Smokers~Income, data = smoker.data)
+summary(smoker.model_1)
+
+```
+Since the pValue is greater than 0.05, it is not significant. We fail to reject the null hypothesis. Income has no effect on smoking.
+
+```{r Age factor only}
+# Choosing Age as a factor first
+smoker.data <- data.table(read.csv("smokersdata.csv", header = TRUE))
+smoker.data$Age <- as.factor(smoker.data$Income)
+str(smoker.data)
+smoker.model_2 <- aov(X.Smokers~Age, data = smoker.data)
+summary(smoker.model_2)
+
+```
+Since the pValue is greater than 0.05, it is not significant. We fail to reject the null hypothesis. Age has no effect on smoking.
+
+4.	If you used only one factor variable in step three include, add the second and re-interpret the results. 
+
+```{r Income and Age factor}
+smoker.data <- data.table(read.csv("smokersdata.csv", header = TRUE))
+smoker.data$Income <- as.factor(smoker.data$Income)
+smoker.data$Age <- as.factor(smoker.data$Age)
+str(smoker.data)
+smoker.model_3 <- aov(X.Smokers~ Income + Age, data = smoker.data)
+TukeyHSD(smoker.model_3)
+```
+
+Since the pValue is less than 0.05, it is significant. We reject the null hypothesis. Age and Income interaction has effect on smoking.
+Seems like the differences between 3-1 and 3-2 in Age are significant
+
+
+5.	Create an interaction plot using all the variables then explain if the plot supports your model findings or not. 
+```{r Interaction plot}
+attach(smoker.data)
+interaction.plot(smoker.data$Age,smoker.data$Income,smoker.data$X.Smokers,type="b",col=c(2:3),leg.bty="o",leg.bg="beige",lwd=2,pch=c(18,24),xlab="Age",ylab="Smoking",main="Interaction plot")
+```
+
+Age has an effect on smoking irrespective of income level.
