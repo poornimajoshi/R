@@ -88,6 +88,18 @@ model3hit.1
 
 ```
 
+```{r}
+library(ROCR)
+#In order to use the package we first have to set the prediction 
+newpred <- prediction(pred.model3,test$spam)
+#Next we want to measure true possitives which is "tpr" and also False Positives "fpr"
+newpred.performance <- performance(newpred, measure = "tpr",x.measure = "fpr")
+#then we plot these two measures
+plot(newpred.performance)
+#Looking pretty good, we can also get the AUC again using the performance function
+AUC <- performance(newpred, measure = "auc")
+AUC
+```
 
 
 
