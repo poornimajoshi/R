@@ -1,0 +1,119 @@
+---
+title: "project2"
+author: "poornima_joshi"
+date: "11/13/2018"
+output: ioslides_presentation
+---
+
+```{r}
+library(openintro)
+library(ResourceSelection)
+library(pROC)
+library(pscl)
+library(ISLR)
+library(dplyr)
+library(ROCR)
+library(openintro)
+library(ISLR)
+library(tidyr)
+library(varhandle)
+library(openintro)
+library(ResourceSelection)
+library(pscl)
+library(ISLR)
+library(dplyr)
+library(ROCR)
+library(openintro)
+library(ISLR)
+library(tidyr)
+library(varhandle)
+library(ggplot2)
+library(ggthemes)
+library(bestglm)
+library(nnet)
+```
+# some knit stuff
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r import dataset}
+#setwd("~/Documents/R/android apps")
+raw_data <- read.csv("clean_googleplaystore.csv")
+str(raw_data)
+#raw_data <- mice(raw_data)
+play_store <- na.omit(raw_data)
+str(play_store)
+#View(play_store)
+play_store$App <- unfactor(play_store$App)
+play_store$Last.Updated <- unfactor(play_store$Last.Updated)
+play_store$Current.Ver <- unfactor(play_store$Current.Ver)
+```
+
+```{r eda}
+sum(is.na(play_store))
+summary(play_store$Rating)
+hist(play_store$Rating)
+barplot(prop.table(table(play_store$Installs)))
+cor(Filter(is.numeric,play_store))
+
+
+ggplot(play_store, aes(x=Reviews, y=Rating)) +
+  scale_x_continuous(trans='log10', labels=comma) +
+  geom_point(aes(col=Type)) +
+  labs(title="Android App Ratings vs Number of Reviews", subtitle="Google Playstore Dataset", y="Rating from 1 to 5 stars", x="Number of Reviews") +
+  theme_linedraw()
+```
+We can see that the number of reviews could boost your app rating, so it might be interesting to see if some other factors might help us get more reviews.
+
+
+```{r convert to 0 and 1}
+play_store$Installs=ifelse(play_store$Installs >=10000,1,0)
+```
+
+
+```{r split}
+table(play_store$Installs)
+set.seed(100)
+trainingRows <- sample(1:nrow(play_store), 0.8*nrow(play_store))
+training <- play_store[trainingRows, ]
+test <- play_store[-trainingRows, ]
+View(training)
+View(test)
+```
+
+
+```{r model}
+#installs <- relevel(installs, ref = "1")
+#Pred.Model1 <- multinom(training$Installs ~ training$Rating+training$Reviews+training$Type+training$Size,data=training)
+model_installs <- glm(Installs ~ Rating+Reviews+Type+Size,family="binomial"(link = "logit"),training)
+summary(model_installs)
+
+pred_install <- predict.glm(model_installs,test,type='response')
+pred.model <- ifelse(pred_install > 0.5,1,0)
+head(pred.model)
+
+hit_installs <- mean(pred.model!=test$Installs)
+hit_installs
+
+library(dplyr)
+test %>% group_by(Installs) %>%
+  summarise(no_rows = length(Installs))
+
+modelhit_installs_num <- mean(pred.model!=as.numeric(test$Installs))
+modelhit_installs_num
+```
+
+
+```{r}
+library(ROCR)
+newpred_installs <- prediction(pred_install,test$Installs)
+
+#Next we want to measure true possitives which is "tpr" and also False Positives "fpr"
+newpred.performance_installs <- performance(newpred_installs, measure = "tpr",x.measure = "fpr")
+#then we plot these two measures
+plot(newpred.performance_installs)
+#Looking pretty good, we can also get the AUC again using the performance function
+AUC <- performance(newpred_installs, measure = "auc")
+AUC
+```
