@@ -16,18 +16,29 @@ library("foreign")
 raw_data <- read.csv("clean_googleplaystore.csv")
 ```
 
+```{r eda}
+library(corrplot)
+#sum(is.na(play_store))
+summary(data$Rating)
+hist(data$Rating)
+barplot(prop.table(table(raw_data$Installs)))
+m <- cor(Filter(is.numeric,raw_data))
+corrplot(m, method = "circle")
+```
+
+
 Re-leveling data
 ```{r }
 data <- raw_data
+data$Installs <- ifelse( data$Installs < 10000 , 0, data$Installs)
 data$installations <- factor(data$Installs)
-data$out <- relevel(data$installations, ref='1')
+data$out <- relevel(data$installations, ref='10000')
 data$Type <- factor(ifelse(data$Type == 'Free', 1, 0))
-data
-data = data[,-c(1, 2, 3,9,10,11,12, 13, 14, 15)]
+data = data[,-c(1, 2, 3,7,9,10,11,12, 13, 14, 15)]
 str(data)
 ```
 
-Now we’ll execute a multinomial regression with two independent variable.
+
 
 ```{r }
 table(data$Installs)
@@ -37,6 +48,8 @@ training <- data[trainingRows, ]
 test <- data[-trainingRows, ]
 ```
 
+Now we’ll execute a multinomial regression with two independent variable.
+
 ```{r}
 library("nnet")
 model <- multinom(out ~ ., data=training, na.action=na.omit)
@@ -45,7 +58,7 @@ summary(model)
 
 
 Interpretation
-1. Model execution output shows some iteration history and includes the final negative log-likelihood 179.981726. This value is multiplied by two as shown in the model summary as the Residual Deviance.
+1. Model execution output shows some iteration history and includes the final negative log-likelihood 13920.747067. This value is multiplied by two as shown in the model summary as the Residual Deviance.
 
 2. The summary output has a block of coefficients and another block of standard errors. Each blocks has one row of values corresponding to one model equation. In the block of coefficients, we see that the first row is being compared to prog = “general” to our baseline prog = “academic” and the second row to prog = “vocation” to our baseline prog = “academic”.
 
@@ -110,7 +123,7 @@ library("reshape2")
 
 ## Warning: package 'reshape2' was built under R version 3.1.3
 
-bpp2 = melt (bpp,id.vars=c("Rating","Reviews", "Size", "Installs", "Type", "out"),value.name="probablity")
+bpp2 = melt (bpp,id.vars=c("Rating","Reviews", "Size", "Type", "out"),value.name="probablity")
 
 head(bpp2)
 ```
