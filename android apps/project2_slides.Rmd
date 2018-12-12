@@ -1,0 +1,129 @@
+
+---
+title: "Predicting success of an app"
+author: "Tyler Remick and Poornima Joshi"
+date: "11/30/2018"
+output: ioslides_presentation
+---
+
+---
+output:
+  ioslides_presentation:
+    widescreen: true
+    smaller: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("~/Documents/R/android apps")
+```
+
+## 1.	Factors that influence success in the App market?
+Ad-monetization which seems to generate $ 1 for every 300 downloads.
+Rating, Type, Reviews, Category, Last updated and icon  directly influence Installations of an in the app market
+
+This study matters to:
+- App developers
+- App market analysts
+- Users of mobile apps
+
+
+## 2.	Gather data for analysis
+- Data was extracted from kaggle.
+https://www.kaggle.com/lava18/google-play-store-apps
+- The kaggle data was extracted by using Selenium and scraping the Google Play store page.
+
+
+### 2.1 This is how the raw data looked like
+```{r import dataset, include=FALSE}
+library("foreign")
+raw_data <- read.csv("clean_googleplaystore.csv")
+raw_data <- na.omit(raw_data)
+```
+***
+```{r rawdata}
+str(raw_data)
+```
+*** 
+### 2.2 Peak into the data{.smaller}
+
+```{r histogram, fig.cap="Histogram of Rating", echo=FALSE}
+hist(raw_data$Rating)
+```
+***
+### 2.2 Peak into the data
+```{r plots, fig.align='left', fig.cap="Number of installations"}
+barplot(prop.table(table(raw_data$Installs)))
+```
+***
+```{r}
+library(ggplot2)
+g <- ggplot(raw_data, aes(x=Installs, y=Rating)) + geom_point() + geom_smooth(method="lm")
+plot(g)
+```
+
+## 2.2 Cleaning and preparing data for analysis{.smaller}
+  - Convert all app sizes to MB
+  - Remove '+' from 'Number of Installs' to make it numeric
+  - Reordering Installs
+  - Convert all the installs to factor levels and releveling it to reference level '1'
+  - Dropping unused columns
+
+```{r prepare the dependent variable, include=FALSE}
+data <- raw_data
+data$Installs <- ifelse( data$Installs < 100000 & data$Installs < 500000000, 0, 1)
+data$installations <- factor(data$Installs)
+#data$out <- relevel(data$installations, ref='10000')
+data$Type <- factor(ifelse(data$Type == 'Free', 1, 0))
+data = data[,-c(1, 2,7,9,10,11,12, 13, 14)]
+str(data)
+```
+
+
+## 3 Logistic regression model{.smaller}
+Get atleast 100,000 installations of a given app.
+```{r splitting data, include=FALSE}
+table(data$installations)
+set.seed(100)
+trainingRows <- sample(1:nrow(data), 0.8*nrow(data))
+training <- data[trainingRows, ]
+test <- data[-trainingRows, ]
+```
+
+
+```{r regression model, include=FALSE, comment=""}
+# Now we’ll execute a logistic regression with independent variables.
+default.model <- glm(installations~ . ,family="binomial"(link = "logit"),training)
+```
+
+```{r regression model summary, echo=FALSE, comment=""}
+summary(default.model)
+```
+## 4 Predicting on test data{.smaller}
+```{r , comment=""}
+pred.model2 <- predict.glm(default.model,test,type='response')
+head(pred.model2)
+
+#pred.model2.1 <- ifelse(pred.model2 > 0.5,1,0)
+#head(pred.model2.1)
+model3hit <- mean(pred.model2!=test$installations)
+model3hit
+```
+
+
+## 5 Measure true possitives and False Positives{.smaller}
+```{r, include=FALSE}
+library(ROCR)
+```
+```{r, comment="", echo=FALSE}
+#In order to use the package we first have to set the prediction 
+newpred <- prediction(pred.model2,test$installations)
+#Next we want to measure true possitives which is "tpr" and also False Positives "fpr"
+newpred.performance <- performance(newpred, measure = "tpr",x.measure = "fpr")
+#then we plot these two measures
+plot(newpred.performance)
+#Looking pretty good, we can also get the AUC again using the performance function
+AUC <- performance(newpred, measure = "auc")
+AUC
+```
+```
