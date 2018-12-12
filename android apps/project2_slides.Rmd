@@ -19,8 +19,9 @@ setwd("~/Documents/R/android apps")
 ```
 
 ## 1.	Factors that influence success in the App market?
-Ad-monetization which seems to generate $ 1 for every 300 downloads.
-Rating, Type, Reviews, Category, Last updated and icon  directly influence Installations of an in the app market
+
+- Rating, Type, Reviews, Category, Last updated and icon  directly influence Installations of an in the app market
+- According to studies for every 300 downloads a $1 was generated through ad-monetization
 
 This study matters to:
 
@@ -54,10 +55,8 @@ plot(g)
 ## 2.2 Cleaning and preparing data for analysis{.smaller}
   - Convert all app sizes to MB
   - Remove '+' from 'Number of Installs' to make it numeric
-  - Reordering Installs
-  - Convert all the installs to factor levels and releveling it to reference level '1'
   - Dropping unused columns
-  - Cagetorised the number of installs less than 100,000 as unsuccessful and  greater than 100,000 as successful
+  - Categorised the number of installs less than 100,000 as unsuccessful and  greater than 100,000 as successful
 
 ```{r prepare the dependent variable, include=FALSE}
 data$Installs <- ifelse( data$Installs < 100000 , 0, 1)
@@ -93,9 +92,22 @@ head(pred.model)
 modelhit <- mean(pred.model!=test$installations)
 modelhit
 ```
+```{r}
+#Predicting for a value
+xx <- data.frame(Category="FAMILY",Reviews=23060,Size=21.000,Type='1',Rating=4.2)
+xxpred <- predict(default.model,xx,type='response')
+xxpred
+#Pretty high chance according to the data we have,what if we cut the reviews to 3000?
+xx.11 <- data.frame(Category="FAMILY",Reviews=3000,Size=21,Type='1',Rating=4.2)
+xxpred.1 <- predict(default.model,xx.11,type='response')
+xxpred.1
+#Likelihood drops to 44%
+new.data.test <- data.frame(Category="FAMILY",Reviews=3000,Size=21,Type='0',Rating=0)
+new.data.test.pred <- predict(default.model,new.data.test, type = "response")
+new.data.test.pred
+```
 
-
-## 5 Measuring true possitives and False Positives{.smaller}
+## 5 Measuring True Positives and False Positives{.smaller}
 ```{r, include=FALSE}
 library(ROCR)
 ```
@@ -111,7 +123,11 @@ AUC <- performance(newpred, measure = "auc")
 AUC
 ```
 
-```
+## 6 Conclusion
+- Installs is a good indicator for sucess of an Android app
+- Rating, Review, Type and Categories are factors that influence the success of an app
+
+
 <style>
 slides > slide { overflow: scroll; }
 slides > slide:not(.nobackground):after {
