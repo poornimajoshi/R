@@ -46,6 +46,7 @@ str(raw_data)
 ## 2.2 Peak into the data{.smaller}
 
 ```{r, echo=FALSE}
+# Correlation plot of Installs v/s ratings
 library(ggplot2)
 data <- na.omit(raw_data)
 g <- ggplot(data, aes(x=Installs, y=Rating)) + geom_point() + geom_smooth(method="lm")
@@ -59,6 +60,7 @@ plot(g)
   - Categorised the number of installs less than 100,000 as unsuccessful and  greater than 100,000 as successful
 
 ```{r prepare the dependent variable, include=FALSE}
+# Categorised the number of installs less than 100,000 as 0 and  greater than as 1
 data$Installs <- ifelse( data$Installs < 100000 , 0, 1)
 data$installations <- factor(data$Installs)
 #data$out <- relevel(data$installations, ref='10000')
@@ -70,6 +72,7 @@ str(data)
 
 ## 3 Classifying apps as successful or not using Logistic regression model{.smaller}
 ```{r splitting data, include=FALSE}
+# Splitting our data into training and test set
 set.seed(100)
 trainingRows <- sample(1:nrow(data), 0.8*nrow(data))
 training <- data[trainingRows, ]
